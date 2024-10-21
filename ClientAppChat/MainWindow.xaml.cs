@@ -23,18 +23,20 @@ namespace ClientAppChat
     {
         IPEndPoint serverEndPoint;
         NetworkStream ns = null;
+        StreamWriter writer = null;
+        StreamReader reader = null;
         //const string serverAddress = "127.0.0.1";
         //const short serverPort = 4040;
-        TcpClient client ;
-        ObservableCollection<MessageInfo> messages = new ObservableCollection<MessageInfo>();   
+        TcpClient client;
+        ObservableCollection<MessageInfo> messages = new ObservableCollection<MessageInfo>();
         public MainWindow()
         {
             InitializeComponent();
             this.DataContext = messages;
             client = new TcpClient();
             string address = ConfigurationManager.AppSettings["ServerAddress"]!;
-            short port =short.Parse( ConfigurationManager.AppSettings["ServerPort"]!);
-            serverEndPoint = new IPEndPoint(IPAddress.Parse(address), port);  
+            short port = short.Parse(ConfigurationManager.AppSettings["ServerPort"]!);
+            serverEndPoint = new IPEndPoint(IPAddress.Parse(address), port);
         }
 
         private void DisconnectBtnClick(object sender, RoutedEventArgs e)
@@ -49,29 +51,28 @@ namespace ClientAppChat
             {
                 client.Connect(serverEndPoint);
                 ns = client.GetStream();
+                writer = new StreamWriter(ns);
+                reader = new StreamReader(ns);
                 Listen();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-
         }
 
         private void SendBtnClick(object sender, RoutedEventArgs e)
         {
             string message = msgText.Text;
-            StreamWriter writer = new StreamWriter(message);
             writer.WriteLine(message);
+            writer.Flush();
         }
 
         private async void Listen()
         {
-            StreamReader reader = new StreamReader(ns);
             while (true)
             {
-
-                string message = await reader.ReadLineAsync();
+                string? message = await reader.ReadLineAsync();
                 messages.Add(new MessageInfo(message, DateTime.Now));
             }
         }
